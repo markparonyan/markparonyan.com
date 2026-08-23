@@ -1,0 +1,17 @@
+Bundled webfont notices
+=======================
+
+Alegreya
+Copyright 2011 The Alegreya Project Authors
+https://github.com/huertatipografica/Alegreya
+
+Alegreya Sans
+Copyright 2013 The Alegreya Sans Project Authors
+https://github.com/huertatipografica/Alegreya-Sans
+
+Geist Mono
+Copyright 2024 The Geist Project Authors
+https://github.com/vercel/geist-font
+
+All three font families are distributed under the SIL Open Font License 1.1.
+The complete license is included alongside this file as OFL-1.1.txt.

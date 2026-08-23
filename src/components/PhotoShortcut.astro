@@ -1,0 +1,44 @@
+---
+import { withBase } from "../lib/urls";
+---
+
+<a class="photo-shortcut" href={withBase("/photos/")} aria-label="View my photographs">
+	<img alt="" decoding="async" height="640" src={withBase("/assets/tarsier.png")} width="640" />
+</a>
+
+<style>
+	.photo-shortcut {
+		position: fixed;
+		z-index: 10;
+		inset-inline-end: max(0.75rem, env(safe-area-inset-right));
+		inset-block-end: max(0.75rem, env(safe-area-inset-bottom));
+		display: block;
+		width: 112px;
+		border-radius: 50%;
+		filter: drop-shadow(0 0.3rem 0.35rem rgb(0 0 0 / 0.18));
+		transition: filter 150ms ease, transform 150ms ease;
+	}
+
+	.photo-shortcut :global(img) {
+		width: 100%;
+		height: auto;
+	}
+
+	.photo-shortcut:hover {
+		filter: drop-shadow(0 0.4rem 0.45rem rgb(0 0 0 / 0.24));
+		transform: translateY(-0.2rem);
+	}
+
+	.photo-shortcut:focus-visible {
+		outline: 2px solid currentColor;
+		outline-offset: 0.25rem;
+	}
+
+	@media print {
+		.photo-shortcut { display: none; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.photo-shortcut { transition: none; }
+	}
+</style>

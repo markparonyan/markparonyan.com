@@ -1,0 +1,38 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+
+interface Props {
+	title: string;
+	description: string;
+}
+---
+
+<BaseLayout
+	class="photos-page"
+	htmlClass="photos-document"
+	title={Astro.props.title}
+	description={Astro.props.description}
+	showPhotoShortcut={false}
+>
+	<main id="main"><slot /></main>
+</BaseLayout>
+
+<style is:global>
+	html.photos-document {
+		min-width: 20rem;
+		background: #0d0d0d;
+		font-size: 16px;
+		color: #b8b8b8;
+		color-scheme: dark;
+	}
+
+	html.photos-document body.photos-page {
+		min-height: 100dvh;
+		background: #0d0d0d;
+		color: #b8b8b8;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+		font-size: 1.125rem;
+		line-height: 1.5;
+		-webkit-font-smoothing: antialiased;
+	}
+</style>

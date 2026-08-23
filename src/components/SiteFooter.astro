@@ -1,0 +1,24 @@
+---
+import { withBase } from "../lib/urls";
+import { siteConfig } from "../site.config";
+
+interface Props {
+	showPostsLink?: boolean;
+}
+
+const { showPostsLink = false } = Astro.props;
+const links = [
+	...(showPostsLink ? [{ href: "/", label: "← Posts", external: false }] : []),
+	...siteConfig.footerLinks,
+];
+---
+
+<footer class="site-footer">
+	{links.map((item) => (
+		<a
+			href={item.external ? item.href : withBase(item.href)}
+			rel={item.external ? "me noreferrer" : undefined}
+			target={item.external ? "_blank" : undefined}
+		>{item.label}</a>
+	))}
+</footer>

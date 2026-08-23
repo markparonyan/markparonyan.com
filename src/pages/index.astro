@@ -1,0 +1,41 @@
+---
+import { getCollection } from "astro:content";
+import SiteFooter from "../components/SiteFooter.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../site.config";
+import { withBase } from "../lib/urls";
+
+const posts = (await getCollection("posts", ({ data }) => import.meta.env.DEV || !data.draft))
+	.sort((a, b) => b.data.publishDate.valueOf() - a.data.publishDate.valueOf());
+
+const formatDate = (date: Date) => date.toLocaleDateString(siteConfig.lang, {
+	day: "numeric",
+	month: "long",
+	year: "numeric",
+});
+---
+
+<BaseLayout>
+	<main class="site-shell">
+		<header class="home-header">
+			<h1>{siteConfig.name}</h1>
+			<p>{siteConfig.intro}</p>
+		</header>
+		<section class="home-posts" aria-labelledby="posts-heading">
+			<h2 id="posts-heading">Posts</h2>
+			{posts.length > 0 ? (
+				<ul class="post-list">
+					{posts.map((post) => (
+						<li>
+							<a href={withBase(`/posts/${post.id}/`)}>{post.data.title}</a>
+							<time datetime={post.data.publishDate.toISOString()}>{formatDate(post.data.publishDate)}</time>
+						</li>
+					))}
+				</ul>
+			) : (
+				<p class="empty-posts">I’m still writing the first one.</p>
+			)}
+		</section>
+		<SiteFooter />
+	</main>
+</BaseLayout>

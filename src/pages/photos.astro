@@ -1,0 +1,253 @@
+---
+import { Picture } from "astro:assets";
+import photo0727 from "../assets/photos/img-0727.jpg";
+import photo0737 from "../assets/photos/img-0737.jpg";
+import photo0744 from "../assets/photos/img-0744.jpg";
+import photo0798 from "../assets/photos/img-0798.jpg";
+import photo1019 from "../assets/photos/img-1019.jpg";
+import PhotosLayout from "../layouts/PhotosLayout.astro";
+import { withBase } from "../lib/urls";
+
+// Add imported images here. Keep entries newest first.
+const photos = [
+	{
+		src: photo1019,
+		alt: "Отдых возле водопада в Терсколе",
+		caption: "Отдых возле водопада в Терсколе",
+		captionLang: "ru",
+	},
+	{
+		src: photo0798,
+		alt: "На озере Донгуз-Орун-Кёль",
+		caption: "На озере Донгуз-Орун-Кёль",
+		captionLang: "ru",
+	},
+	{
+		src: photo0744,
+		alt: "Астрономическая обсерватория. ~3150м, путь назад",
+		caption: "Астрономическая обсерватория. ~3150м, путь назад",
+		captionLang: "ru",
+	},
+	{
+		src: photo0737,
+		alt: "Начало пути к обсерватории Терскола",
+		caption: "Начало пути к обсерватории Терскола",
+		captionLang: "ru",
+	},
+	{
+		src: photo0727,
+		alt: "Гениальная фотка возле водопада Девичьи Косы",
+		caption: "Гениальная фотка возле водопада Девичьи Косы",
+		captionLang: "ru",
+	},
+];
+---
+
+<PhotosLayout title="Photos">
+	<section aria-labelledby="photos-heading">
+		<header class="gallery-intro">
+			<a class="home-link" href={withBase("/")}><span aria-hidden="true">←</span> Home</a>
+			<h1 id="photos-heading">Photographs <span aria-hidden="true">—</span> 2026</h1>
+		</header>
+
+		<photo-gallery>
+			<ul class="photo-grid" role="list">
+				{photos.map((photo, index) => (
+					<li class="photo">
+						<a
+							aria-describedby={`photo-caption-${index}`}
+							aria-label={`Open full-screen: ${photo.alt}`}
+							class="photo-link"
+							data-caption-lang={photo.captionLang}
+							data-height={photo.src.height}
+							data-width={photo.src.width}
+							href={photo.src.src}
+						>
+							<Picture
+								alt={photo.alt}
+								decoding="async"
+								formats={["avif", "webp"]}
+								loading="lazy"
+								sizes="(max-width: 44rem) 64vw, (max-width: 88rem) 18vw, 14vw"
+								src={photo.src}
+								widths={[320, 480, 640, 960]}
+							/>
+						</a>
+						<p class="sr-only" id={`photo-caption-${index}`} lang={photo.captionLang}>{photo.caption}</p>
+					</li>
+				))}
+			</ul>
+
+			<dialog aria-describedby="photo-viewer-caption" aria-label="Full-screen photo" class="photo-viewer">
+				<button aria-label="Close full-screen photo" class="photo-viewer__background" type="button"></button>
+				<div class="photo-viewer__content">
+					<button aria-label="Close full-screen photo" class="photo-viewer__close" type="button">
+						<img alt="" class="photo-viewer__image" />
+					</button>
+					<p class="photo-viewer__caption" id="photo-viewer-caption"></p>
+				</div>
+			</dialog>
+		</photo-gallery>
+
+		<footer class="gallery-footer">
+			<p>All photos taken by me, shot on Huawei or iPhone</p>
+		</footer>
+	</section>
+</PhotosLayout>
+
+<script>
+	class PhotoGallery extends HTMLElement {
+		#activeLink: HTMLAnchorElement | null = null;
+		#background: HTMLButtonElement;
+		#caption: HTMLParagraphElement;
+		#closeQueued = false;
+		#dialog: HTMLDialogElement;
+		#fullImageHeight = 0;
+		#fullImageSrc: string | null = null;
+		#fullImageWidth = 0;
+		#image: HTMLImageElement;
+		#transitioning = false;
+
+		constructor() {
+			super();
+			this.#dialog = this.querySelector<HTMLDialogElement>("dialog")!;
+			this.#background = this.#dialog.querySelector<HTMLButtonElement>(".photo-viewer__background")!;
+			this.#caption = this.#dialog.querySelector<HTMLParagraphElement>(".photo-viewer__caption")!;
+			this.#image = this.#dialog.querySelector<HTMLImageElement>("img")!;
+		}
+
+		connectedCallback() {
+			this.querySelectorAll<HTMLAnchorElement>(".photo-link").forEach((link) => {
+				link.addEventListener("click", (event) => {
+					if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+					event.preventDefault();
+					void this.#open(link);
+				});
+			});
+
+			this.#dialog.querySelector<HTMLButtonElement>(".photo-viewer__close")
+				?.addEventListener("click", () => void this.#close());
+			this.#background.addEventListener("click", () => void this.#close());
+			this.#dialog.addEventListener("cancel", (event) => {
+				event.preventDefault();
+				void this.#close();
+			});
+			window.addEventListener("resize", () => this.#sizeImage());
+		}
+
+		async #open(link: HTMLAnchorElement) {
+			if (this.#transitioning || this.#dialog.open) return;
+
+			const thumbnail = link.querySelector<HTMLImageElement>("img")!;
+			const fullImage = new Image();
+			fullImage.src = link.href;
+
+			this.#activeLink = link;
+			this.#fullImageSrc = link.href;
+			this.#image.src = thumbnail.currentSrc || thumbnail.src;
+			this.#image.alt = thumbnail.alt;
+			this.#dialog.setAttribute("aria-label", `Full-screen photo: ${thumbnail.alt}`);
+			this.#caption.textContent = this.querySelector<HTMLElement>(`#${link.getAttribute("aria-describedby")}`)?.textContent?.trim() ?? "";
+			this.#caption.lang = link.dataset.captionLang ?? "";
+			this.#fullImageWidth = Number(link.dataset.width);
+			this.#fullImageHeight = Number(link.dataset.height);
+			this.#image.width = this.#fullImageWidth;
+			this.#image.height = this.#fullImageHeight;
+			this.#sizeImage();
+			this.#transitioning = true;
+			this.#dialog.showModal();
+			await this.#animate(false);
+
+			this.#transitioning = false;
+			if (this.#closeQueued) {
+				this.#closeQueued = false;
+				void this.#close();
+				return;
+			}
+			this.#dialog.querySelector<HTMLButtonElement>(".photo-viewer__close")?.focus({ preventScroll: true });
+			void fullImage.decode().then(() => {
+				if (this.#dialog.open && this.#fullImageSrc === fullImage.src) this.#image.src = fullImage.src;
+			}).catch(() => {});
+		}
+
+		async #close() {
+			if (this.#transitioning) {
+				this.#closeQueued = true;
+				return;
+			}
+			if (!this.#dialog.open || !this.#activeLink) return;
+
+			this.#transitioning = true;
+			await this.#animate(true);
+			this.#dialog.close();
+
+			const activeLink = this.#activeLink;
+			activeLink.classList.add("photo-link--restored-focus");
+			activeLink.addEventListener("blur", () => activeLink.classList.remove("photo-link--restored-focus"), { once: true });
+			activeLink.focus({ preventScroll: true });
+			this.#activeLink = null;
+			this.#caption.textContent = "";
+			this.#caption.removeAttribute("lang");
+			this.#closeQueued = false;
+			this.#dialog.setAttribute("aria-label", "Full-screen photo");
+			this.#fullImageSrc = null;
+			this.#fullImageWidth = 0;
+			this.#fullImageHeight = 0;
+			this.#transitioning = false;
+		}
+
+		#sizeImage() {
+			if (!this.#fullImageWidth || !this.#fullImageHeight) return;
+			const scale = Math.min(1, (window.innerWidth - 48) / this.#fullImageWidth, (window.innerHeight - 96) / this.#fullImageHeight);
+			this.#image.style.width = `${Math.round(this.#fullImageWidth * scale)}px`;
+			this.#image.style.height = `${Math.round(this.#fullImageHeight * scale)}px`;
+		}
+
+		async #animate(closing: boolean) {
+			if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+			const frames = closing ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 0 }, { opacity: 1 }];
+			const options: KeyframeAnimationOptions = { duration: closing ? 120 : 160, easing: "ease-out" };
+			await Promise.all([this.#image.animate(frames, options).finished, this.#background.animate(frames, options).finished]);
+		}
+	}
+
+	if (!customElements.get("photo-gallery")) customElements.define("photo-gallery", PhotoGallery);
+</script>
+
+<style>
+	.gallery-intro { position: relative; display: grid; height: 6.25rem; place-items: center; border-block-end: 1px solid #242424; }
+	.gallery-intro h1 { margin: 0; color: #717171; font-family: inherit; font-size: 0.875rem; font-weight: 500; letter-spacing: 0.125rem; line-height: 1rem; text-transform: uppercase; }
+	.home-link { position: absolute; inset-inline-start: clamp(1rem, 2vw, 2rem); top: 50%; color: #777; font-size: 0.6875rem; letter-spacing: 0.1em; text-decoration: none; text-transform: uppercase; transform: translateY(-50%); transition: color 160ms ease; }
+	.home-link:hover { color: #c2c2c2; }
+	.home-link:focus-visible { outline: 1px solid #666; outline-offset: 0.35rem; }
+	.gallery-footer { display: grid; min-height: 6rem; place-items: center; padding: 1.5rem; color: #686868; font-size: 0.6875rem; letter-spacing: 0.06em; text-align: center; }
+	.gallery-footer p { margin: 0; }
+	.photo-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
+	.photo { display: grid; aspect-ratio: 1; place-items: center; border-inline-end: 1px solid #242424; border-block-end: 1px solid #242424; transition: border-color 160ms ease, box-shadow 160ms ease; }
+	.photo:hover { border-color: #383838; box-shadow: inset 0 0 0 1px #383838; }
+	.photo-link { display: grid; width: 100%; height: 100%; place-items: center; cursor: zoom-in; }
+	.photo-link :global(picture) { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; }
+	.photo-link :global(img) { display: block; width: auto; max-width: 72%; height: auto; max-height: 80%; object-fit: contain; }
+	.photo-link:focus-visible { outline: 1px solid #5f5f5f; outline-offset: -1px; }
+	.photo-link--restored-focus:focus-visible { outline: 0; }
+	.photo-viewer { width: 100vw; max-width: none; height: 100dvh; max-height: none; margin: 0; padding: 0; border: 0; background: transparent; color: #9a9a9a; }
+	.photo-viewer[open] { display: grid; place-items: center; }
+	.photo-viewer::backdrop { background: transparent; }
+	.photo-viewer__background { position: fixed; inset: 0; cursor: zoom-out; border: 0; background: #090909; will-change: opacity; }
+	.photo-viewer__content { position: relative; display: flex; width: 100vw; height: 100dvh; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; pointer-events: none; }
+	.photo-viewer__close { display: grid; max-width: 100%; max-height: calc(100dvh - 4.5rem); place-items: center; cursor: zoom-out; border: 0; outline: 0; background: transparent; padding: 0; pointer-events: auto; }
+	.photo-viewer__image { display: block; width: auto; max-width: calc(100vw - 3rem); height: auto; max-height: calc(100dvh - 6rem); object-fit: contain; will-change: opacity; }
+	.photo-viewer__caption { max-width: 42rem; margin: 0.75rem 0 0; color: #777; font-size: 0.6875rem; letter-spacing: 0.04em; text-align: center; }
+	@media (max-width: 124.99rem) { .photo-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+	@media (max-width: 104.99rem) { .photo-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+	@media (max-width: 79.99rem) { .photo-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+	@media (max-width: 43.99rem) {
+		.gallery-intro { height: 5rem; grid-template-columns: auto 1fr; gap: 1rem; padding-inline: 1rem; }
+		.gallery-intro h1 { justify-self: end; font-size: 0.75rem; letter-spacing: 0.0625rem; text-align: end; }
+		.home-link { position: static; justify-self: start; font-size: 0.625rem; transform: none; }
+		.photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+		.photo-link :global(img) { max-width: 78%; max-height: 84%; }
+	}
+	@media (max-width: 31.99rem) { .photo-grid { grid-template-columns: 1fr; } }
+	@media (prefers-reduced-motion: reduce) { .photo { transition: none; } }
+</style>

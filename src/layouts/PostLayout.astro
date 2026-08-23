@@ -1,0 +1,30 @@
+---
+import type { CollectionEntry } from "astro:content";
+import SiteFooter from "../components/SiteFooter.astro";
+import BaseLayout from "./BaseLayout.astro";
+import { siteConfig } from "../site.config";
+import { withBase } from "../lib/urls";
+
+interface Props { post: CollectionEntry<"posts">; }
+const { post } = Astro.props;
+const date = post.data.publishDate.toLocaleDateString(siteConfig.lang, {
+	day: "numeric",
+	month: "long",
+	year: "numeric",
+});
+---
+
+<BaseLayout title={post.data.title} description={post.data.description}>
+	<main class="site-shell">
+		<nav class="post-nav" aria-label="Breadcrumb"><a href={withBase("/")}>{siteConfig.name}</a></nav>
+		<article>
+			<header class="article-header">
+				<h1>{post.data.title}</h1>
+				<p>{siteConfig.author}</p>
+				<time datetime={post.data.publishDate.toISOString()}>{date}</time>
+			</header>
+			<div class="prose"><slot /></div>
+		</article>
+		<SiteFooter showPostsLink />
+	</main>
+</BaseLayout>
